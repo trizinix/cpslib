@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <unistd.h>
+#include <windows.h>
 #include "pslib.h"
 
 void
@@ -304,7 +304,7 @@ test_cpu_count()
 
 void test_process()
 {
-  pid_t pid = getpid();
+	DWORD pid = GetCurrentProcessId();
   Process *process = get_process(pid);
   printf(" Process information \n");
   printf("pid %d\n",process->pid);
