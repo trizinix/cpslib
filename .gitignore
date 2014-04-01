@@ -4,3 +4,5 @@ driver
 nul
 notes.org
 .ruby-version
+*~
+build/*
