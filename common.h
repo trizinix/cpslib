@@ -6,10 +6,12 @@ int str_comp(const void *, const void *);
 int int_comp(const void *, const void *);
 char *grep_awk(FILE *, char *, int, char *);
 char *squeeze(char *, char *);
+char *cpslib_strdup(char *s );
 
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
@@ -20,6 +22,14 @@ char *squeeze(char *, char *);
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
+
+#ifndef HAVE_STRDUP
+# ifdef HAVE__STRDUP
+#  define strdup _strdup
+# else
+#  define strdup cpslib_strdup
+# endif
+#endif
 
 #ifdef NDEBUG
 #define debug(M, ...)

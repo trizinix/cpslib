@@ -11,6 +11,17 @@
 PROJECT(cpslib)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+INCLUDE(CheckIncludeFiles)
+INCLUDE(CheckSymbolExists)
+
+CHECK_SYMBOL_EXISTS(strdup string.h HAVE_STRDUP) 
+CHECK_SYMBOL_EXISTS(strdup string.h HAVE__STRDUP) 
+
+configure_file ("${PROJECT_SOURCE_DIR}/config.h.in"
+                "${PROJECT_BINARY_DIR}/config.h" )
+include_directories(${PROJECT_BINARY_DIR})
+
+
 string(REGEX MATCH "clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER}")
 
 SET(src
@@ -35,3 +46,4 @@ IF(WIN32)
 ENDIF(WIN32)
 
 ADD_EXECUTABLE(driver ${src})
+
