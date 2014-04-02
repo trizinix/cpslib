@@ -15,7 +15,8 @@ INCLUDE(CheckIncludeFiles)
 INCLUDE(CheckSymbolExists)
 
 CHECK_SYMBOL_EXISTS(strdup string.h HAVE_STRDUP) 
-CHECK_SYMBOL_EXISTS(strdup string.h HAVE__STRDUP) 
+CHECK_SYMBOL_EXISTS(strdup string.h HAVE__STRDUP)
+CHECK_SYMBOL_EXISTS(strcpy_s string.h HAVE_STRCPY_S)
 
 configure_file ("${PROJECT_SOURCE_DIR}/config.h.in"
                 "${PROJECT_BINARY_DIR}/config.h" )
@@ -43,6 +44,7 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 IF(WIN32)
   SET(OperatingSystem "Windows")
+  LIST(APPEND src pslib_windows.c)
 ENDIF(WIN32)
 
 ADD_EXECUTABLE(driver ${src})

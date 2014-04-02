@@ -3,12 +3,13 @@
  * during the cmake configuration of cpslib.
  * If you need to make changes edit the original
  * file NOT THIS FILE.
- *---------------------------------------------
+ *---------------------------------------------*/
 
 #ifndef __pslib_config_h
 #define __pslib_config_h
 
 #cmakedefine HAVE_STRDUP @HAVE_STRDUP@
 #cmakedefine HAVE__STRDUP @HAVE__STRDUP@
+#cmakedefine HAVE_STRCPY_S @HAVE_STRCPY_S@
 
 #endif
