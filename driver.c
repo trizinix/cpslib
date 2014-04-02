@@ -9,11 +9,11 @@ test_diskusage()
 {
   DiskUsage du;
   printf(" Disk usage \n");
-  disk_usage("/", &du);
-  printf("total: %ld\nused: %ld\nfree: %ld\npercent: %f\n", du.total, du.used, du.free, du.percent);
+  disk_usage("C:", &du);
+  printf("total: %lld\nused: %lld\nfree: %lld\npercent: %lf\n", du.total, du.used, du.free, du.percent);
   printf("\n");
 }
-
+/*
 void
 test_diskpartitioninfo()
 {
@@ -323,12 +323,12 @@ void test_process()
   printf("\n");
   free_process(process);
 }
-
+*/
 int
 main()
 {
   test_diskusage();
-  test_diskpartitioninfo();
+  /*test_diskpartitioninfo();
   test_diskiocounters();
   test_netiocounters();
   test_getusers();
@@ -342,7 +342,9 @@ main()
   test_cpu_percent();
   test_cpu_percent_per_cpu();
   test_cpu_count();
-  test_process();
+  test_process();*/
+
+  system("PAUSE");
   return 0;
 }
 

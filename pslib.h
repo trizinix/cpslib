@@ -73,9 +73,9 @@ enum proc_priority {
 
 
 typedef struct {
-  unsigned long total;
-  unsigned long used;
-  unsigned long free;
+  unsigned long long total;
+  unsigned long long used;
+  unsigned long long free;
   float percent;
 } DiskUsage;
 

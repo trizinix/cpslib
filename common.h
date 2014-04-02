@@ -1,7 +1,7 @@
 #ifndef __common_h
 #define __common_h
 
-float percentage(unsigned long int, unsigned long int);
+double percentage(unsigned long long int, unsigned long long int);
 int str_comp(const void *, const void *);
 int int_comp(const void *, const void *);
 char *grep_awk(FILE *, char *, int, char *);
@@ -51,15 +51,11 @@ char *cpslib_strdup(char *s );
 #define debug(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #endif
 
-#if defined(_WIN32) || defined(_WIN64)
-char* clean_errno() {
-	static char buf[50];
-	strerror_s(buf, 50, errno);
-	return buf;
-}
-#else
-#  define clean_errno() (errno == 0 ? "None" : strerror(errno))
-#endif
+//#if defined(_WIN32) || defined(_WIN64)
+char* clean_errno();
+//#else
+//#  define clean_errno() (errno == 0 ? "None" : strerror(errno))
+//#endif
 
 #define log_err(M, ...) fprintf(stderr, "[ERROR] (%s:%d:%s: errno: %s) " M "\n", __FILE__, __LINE__, __FUNCTION__, clean_errno(), ##__VA_ARGS__)
 #define log_warn(M, ...) fprintf(stderr, "[WARN] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)

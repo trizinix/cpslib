@@ -5,12 +5,12 @@
 
 #include "common.h"
 
-float
-percentage(unsigned long int n, unsigned long int d)
+double
+percentage(unsigned long long int n, unsigned long long int d)
 {
   /* TBD: Error check here */
-  float percent = (float)(n / d* 100.0);
-  return percent;
+  long double percent = (long double)n / d * 100.0;
+  return (double)percent;
 }
 
 
@@ -89,4 +89,10 @@ cpslib_strdup(char *s ) {
   if (result == (char*)0){return (char*)0;}
   strcpy(result, s);
   return result;
+}
+
+char* clean_errno() {
+	static char buf[50];
+	strerror_s(buf, 50, errno);
+	return buf;
 }
