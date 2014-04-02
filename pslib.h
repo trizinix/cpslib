@@ -1,7 +1,6 @@
 #ifndef __pslib_linux_h
 #define __pslib_linux_h
 
-
 enum proc_status {
   STATUS_RUNNING,
   STATUS_SLEEPING,

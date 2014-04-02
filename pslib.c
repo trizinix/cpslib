@@ -15,3 +15,15 @@ free_disk_partition_info(DiskPartitionInfo *di)
 	free(di->partitions);
 	free(di);
 }
+
+void
+free_disk_iocounter_info(DiskIOCounterInfo *di)
+{
+	DiskIOCounters *d = di->iocounters;
+	while (di->nitems--) {
+		free(d->name);
+		d++;
+	}
+	free(di->iocounters);
+	free(di);
+}

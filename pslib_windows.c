@@ -96,13 +96,13 @@ DiskPartitionInfo *disk_partitions(bool all) {
 		}
 
 		if (pflags & FILE_READ_ONLY_VOLUME) {
-			strcat_s(opts, 20, "ro");			
+			strcat_s(opts, 20, "ro");
 		}
 		else {
 			strcat_s(opts, 20, "rw");
 		}
 		if (pflags & FILE_VOLUME_IS_COMPRESSED) {
-			strcat_s(opts, 20, ",compressed");			
+			strcat_s(opts, 20, ",compressed");
 		}
 
 		if (strlen(opts) > 0) {
@@ -132,5 +132,75 @@ DiskPartitionInfo *disk_partitions(bool all) {
 	return ret;
 error:
 	free_disk_partition_info(ret);
+	return NULL;
+}
+
+// TBD Find a more elegant/reliable solution
+// http://stackoverflow.com/questions/327718/how-to-list-physical-disks
+DiskIOCounterInfo *disk_io_counters() {
+	DISK_PERFORMANCE disk_perf;
+	DWORD dwSize;
+
+	int nparts = 5;
+	DiskIOCounters *counters = calloc(nparts, sizeof(DiskIOCounters));
+	DiskIOCounterInfo *ret = calloc(1, sizeof(DiskIOCounterInfo));
+	DiskIOCounters *ci = counters;
+	check_mem(counters);
+	check_mem(ret);
+
+	ret->nitems = 0;
+	ret->iocounters = counters;
+
+	HANDLE hDevice = NULL;
+	char szDevice[MAX_PATH];
+	char szDeviceDisplay[MAX_PATH];
+	int devNum;
+
+	for (devNum = 0;; devNum++) {
+		sprintf(szDevice, "\\\\.\\PhysicalDrive%d", devNum);
+		hDevice = CreateFile(szDevice, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
+			NULL, OPEN_EXISTING, 0, NULL);
+
+		if (hDevice == INVALID_HANDLE_VALUE) {
+			// TBD: Make something smart
+			// what happens if we get an invalid handle on the first disk?
+			// we might end up with an empty dict incorrectly in some cases
+			break;
+		}
+
+		if (DeviceIoControl(hDevice, IOCTL_DISK_PERFORMANCE, NULL, 0,
+			&disk_perf, sizeof(DISK_PERFORMANCE),
+			&dwSize, NULL))
+		{
+			sprintf(szDeviceDisplay, "PhysicalDrive%d", devNum);
+			ci->name = strdup(szDeviceDisplay);
+			ci->reads = disk_perf.ReadCount;
+			ci->writes = disk_perf.WriteCount;
+			printf("%ld - %ld  sizeof: %d - %d\n\n", ci->reads, ci->writes, disk_perf.ReadCount, disk_perf.WriteCount);
+			ci->readbytes = disk_perf.BytesRead.QuadPart;
+			ci->writebytes = disk_perf.BytesWritten.QuadPart;
+			ci->readtime = (disk_perf.ReadTime.QuadPart * 10) / 1000;
+			ci->writetime = (disk_perf.WriteTime.QuadPart * 10) / 1000;
+		}
+		else {
+			// TBD: we might get here with ERROR_INSUFFICIENT_BUFFER
+		}
+
+		ret->nitems++;
+		ci++;
+
+		if (ret->nitems == nparts) {
+			nparts *= 2;
+			counters = realloc(counters, sizeof(DiskIOCounters)*nparts);
+			check_mem(counters);
+			ret->iocounters = counters;
+			ci = ret->iocounters + ret->nitems;
+		}
+
+		CloseHandle(hDevice); // TBD: We might not close when goto error
+	}
+	return ret;
+
+error:
 	return NULL;
 }

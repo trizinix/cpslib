@@ -37,7 +37,7 @@ test_diskpartitioninfo()
   free_disk_partition_info(dp);  
   printf("\n");
 }
-/*
+
 void
 test_diskiocounters()
 {
@@ -53,7 +53,7 @@ test_diskiocounters()
   dp = d->iocounters;
   int i;
   for (i = 0 ; i < d->nitems; i ++) {
-    printf("%s: rbytes=%ld,wbytes=%ld,reads=%ld,writes=%ld,rtime=%ld,wtime=%ld\n",
+    printf("%s: rbytes=%uld,wbytes=%uld,reads=%uld,writes=%uld,rtime=%uld,wtime=%uld\n",
            dp->name,
            dp->readbytes,
            dp->writebytes,
@@ -66,7 +66,7 @@ test_diskiocounters()
   free_disk_iocounter_info(d);
   printf("\n");
 }
-
+/*
 void
 test_netiocounters()
 {
@@ -330,8 +330,8 @@ main()
 {
   test_diskusage();
   test_diskpartitioninfo();
-  /*test_diskiocounters();
-  test_netiocounters();
+  test_diskiocounters();
+  /*test_netiocounters();
   test_getusers();
   test_boottime();
   test_virtualmeminfo();

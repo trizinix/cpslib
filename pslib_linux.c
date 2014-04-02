@@ -531,18 +531,6 @@ error:
   return NULL;
 }
 
-void
-free_disk_iocounter_info(DiskIOCounterInfo *di)
-{
-  DiskIOCounters *d = di->iocounters;
-  while (di->nitems--) {
-    free (d->name);
-    d++;
-  }
-  free(di->iocounters);
-  free(di);
-}
-
 NetIOCounterInfo *
 net_io_counters()
 {
