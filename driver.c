@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <windows.h>
 #include "pslib.h"
@@ -13,14 +14,14 @@ test_diskusage()
   printf("total: %lld\nused: %lld\nfree: %lld\npercent: %lf\n", du.total, du.used, du.free, du.percent);
   printf("\n");
 }
-/*
+
 void
 test_diskpartitioninfo()
 {
   int i;
   DiskPartitionInfo *dp;
   printf(" Disk partitions \n");
-  dp = disk_partitions();
+  dp = disk_partitions(false);
   if (!dp) {
     printf("Aborting\n");
     return;
@@ -36,7 +37,7 @@ test_diskpartitioninfo()
   free_disk_partition_info(dp);  
   printf("\n");
 }
-
+/*
 void
 test_diskiocounters()
 {
@@ -328,8 +329,8 @@ int
 main()
 {
   test_diskusage();
-  /*test_diskpartitioninfo();
-  test_diskiocounters();
+  test_diskpartitioninfo();
+  /*test_diskiocounters();
   test_netiocounters();
   test_getusers();
   test_boottime();

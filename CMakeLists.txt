@@ -28,6 +28,7 @@ string(REGEX MATCH "clang" CMAKE_COMPILER_IS_CLANG "${CMAKE_C_COMPILER}")
 SET(src
   common.c
   driver.c
+  pslib.c
 ) 
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

@@ -202,7 +202,7 @@ typedef struct {
 
 int disk_usage(char [], DiskUsage *);
 
-DiskPartitionInfo *disk_partitions();
+DiskPartitionInfo *disk_partitions(bool);
 //DiskPartitionInfo *disk_partitions_physical(); ?
 void free_disk_partition_info(DiskPartitionInfo *);
 

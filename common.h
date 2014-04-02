@@ -12,7 +12,7 @@ char *cpslib_strdup(char *s );
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <config.h>
+#include "config.h"
 
 // TODO use strtok_s, strcpy_s, __strdup and strerror_s per default on windows
 
