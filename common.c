@@ -63,7 +63,7 @@ grep_awk(FILE *fp, char *fstr, int nfield, char *delim)
   return NULL;
 }
 
-char *
+char * /* Removes every char in chars from string */
 squeeze(char *string, char *chars)
 {
   char *src = string;
@@ -84,3 +84,12 @@ squeeze(char *string, char *chars)
   }
   return string;
 }
+
+/* Used to apply qsort to an array of strings */
+int
+str_cmp(const void *a, const void *b) 
+{ 
+    const char **na = (const char **)a;
+    const char **nb = (const char **)b;
+    return strcmp(*na, *nb);
+} 

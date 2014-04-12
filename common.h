@@ -6,6 +6,7 @@ int str_comp(const void *, const void *);
 int int_comp(const void *, const void *);
 char *grep_awk(FILE *, char *, int, char *);
 char *squeeze(char *, char *);
+int str_cmp(const void *a, const void *b);
 
 #include <stdio.h>
 #include <errno.h>
@@ -20,6 +21,8 @@ char *squeeze(char *, char *);
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
+
+#define NELEMS(x)  (sizeof(x) / sizeof(x[0]))
 
 #ifdef NDEBUG
 #define debug(M, ...)
