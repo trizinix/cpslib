@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 
 #include "common.h"
 
@@ -86,10 +87,13 @@ squeeze(char *string, char *chars)
 }
 
 /* Used to apply qsort to an array of strings */
-int
-str_cmp(const void *a, const void *b) 
-{ 
-    const char **na = (const char **)a;
-    const char **nb = (const char **)b;
-    return strcmp(*na, *nb);
+int str_cmp(const void *a, const void *b)  { 
+  const char **na = (const char **)a;
+  const char **nb = (const char **)b;
+  return strcmp(*na, *nb);
 } 
+
+char* skip_whitespaces(char *pos) {
+  while(isspace(pos)) pos++;
+  return pos;
+}

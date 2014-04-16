@@ -1,8 +1,10 @@
 #ifndef __pslib_linux_h
 #define __pslib_linux_h
 
+#include <stdbool.h>
 
 enum proc_status {
+  STATUS_UNKNOWN,
   STATUS_RUNNING,
   STATUS_SLEEPING,
   STATUS_DISK_SLEEP,
@@ -24,24 +26,27 @@ enum ioprio_class {
   IOPRIO_CLASS_IDLE
 };
 
+/* Same values than RLIMIT_* in resource.h 
+   TBD: write converting function, some platforms could overrite
+   the values here */
 enum cpslib_rlimit {
-  CPSLIB_RLIMIT_INFINITY,
-  CPSLIB_RLIMIT_AS,
-  CPSLIB_RLIMIT_CORE,
-  CPSLIB_RLIMIT_CPU,
-  CPSLIB_RLIMIT_DATA,
-  CPSLIB_RLIMIT_FSIZE,
-  CPSLIB_RLIMIT_LOCKS,
-  CPSLIB_RLIMIT_MEMLOCK,
-  CPSLIB_RLIMIT_MSGQUEUE,
-  CPSLIB_RLIMIT_NICE,
-  CPSLIB_RLIMIT_NOFILE,
-  CPSLIB_RLIMIT_NPROC,
-  CPSLIB_RLIMIT_RSS,
-  CPSLIB_RLIMIT_RTPRIO,
-  CPSLIB_RLIMIT_RTTIME,
-  CPSLIB_RLIMIT_SIGPENDING,
-  CPSLIB_RLIMIT_STACK
+  CPSLIB_RLIMIT_CPU = 0,
+  CPSLIB_RLIMIT_FSIZE = 1,
+  CPSLIB_RLIMIT_DATA = 2,
+  CPSLIB_RLIMIT_STACK = 3,
+  CPSLIB_RLIMIT_CORE = 4,
+  CPSLIB_RLIMIT_RSS = 5,
+  CPSLIB_RLIMIT_NPROC = 6,
+  CPSLIB_RLIMIT_NOFILE = 7,
+  CPSLIB_RLIMIT_MEMLOCK = 8,
+  CPSLIB_RLIMIT_AS = 9,
+  CPSLIB_RLIMIT_LOCKS = 10,
+  CPSLIB_RLIMIT_SIGPENDING = 11,
+  CPSLIB_RLIMIT_MSGQUEUE = 12,
+  CPSLIB_RLIMIT_NICE = 13,
+  CPSLIB_RLIMIT_RTPRIO = 14,
+  CPSLIB_RLIMIT_RTTIME = 15,
+  CPSLIB_RLIMIT_INFINITY = (~0UL)
 };
 
 enum con_status {
@@ -218,7 +223,7 @@ void free_net_iocounter_info(NetIOCounterInfo *);
 UsersInfo *get_users();
 void free_users_info(UsersInfo *);
 
-unsigned long int get_boot_time();
+long int get_boot_time();
 
 int virtual_memory(VmemInfo *);
 int swap_memory(SwapMem *);
@@ -232,7 +237,7 @@ int cpu_times_percent_per_cpu(CpuTimes **);
 double cpu_percent();
 int cpu_percent_per_cpu(double **);
 
-int cpu_count(int);
+int cpu_count(bool);
 
 Process *get_process(unsigned int);
 void free_process(Process *);
@@ -240,3 +245,5 @@ void free_process(Process *);
 #endif
 // disk_io_counters_per_disk
 // net_io_counters_per_nic
+// net_connections
+

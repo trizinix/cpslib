@@ -141,7 +141,7 @@ test_getusers()
 void
 test_boottime()
 {
-  unsigned long t = get_boot_time();
+  long t = get_boot_time();
   printf(" Boot time \n");
   if (t == -1) {
     printf("Aborting\n");
@@ -348,7 +348,7 @@ void test_process()
 }
 
 int
-main()
+main(void)
 {
   test_diskusage();
   test_diskpartitioninfo();

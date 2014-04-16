@@ -1,16 +1,18 @@
 #ifndef __common_h
 #define __common_h
 
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <stdbool.h>
+
 float percentage(unsigned long int, unsigned long int);
 int str_comp(const void *, const void *);
 int int_comp(const void *, const void *);
 char *grep_awk(FILE *, char *, int, char *);
 char *squeeze(char *, char *);
 int str_cmp(const void *a, const void *b);
-
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
+char* skip_whitespaces(char *pos);
 
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
