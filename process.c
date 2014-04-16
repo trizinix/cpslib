@@ -26,6 +26,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <time.h>
 #include <unistd.h>
 #include <utmp.h>
@@ -198,7 +199,7 @@ Proc_UserIDs *process_uids(Proc *p) {
 
   uids = get_ids(p->pid, "Uid:");
   check(uids != NULL, "Couldn't get uids");
-  
+
   ret = calloc(1, sizeof(Proc_UserIDs));
   ret->uid = uids[0];
   ret->euid = uids[1];
@@ -217,7 +218,7 @@ Proc_GroupIDs *process_gids(Proc *p) {
 
   gids = get_ids(p->pid, "Gid:");
   check(gids != NULL, "Couldn't get gids");
-  
+
   ret = calloc(1, sizeof(Proc_GroupIDs));
   ret->gid = gids[0];
   ret->egid = gids[1];
@@ -299,7 +300,7 @@ int process_num_fds(Proc *p) {
   while ((dir = readdir(d)) != NULL) {
     count++;
   }
-  
+
   closedir(d);
   return count;
 
@@ -755,6 +756,174 @@ double process_create_time(Proc *p) {
   if (fp) fclose(fp);
   if (contents) free(contents);
   return 0.0;
+}
+
+static unsigned long total_memory() {
+ static unsigned long total_phys_memory = 0;
+
+  if(total_phys_memory != 0) {
+    return total_phys_memory;
+  }
+
+  VmemInfo mem;
+  int ret = virtual_memory(&mem);
+  check(ret != -1, "Couldn't get total system memory");
+  total_phys_memory = mem.total;
+
+  return total_phys_memory;
+
+error:
+  return -1;
+}
+
+double process_memory_percent(Proc *p) {
+  Proc_MemoryInfo *mem = process_memory_info(p);
+  unsigned long rss = mem->rss;
+  unsigned long total = total_memory();
+
+  free(mem);
+  if(total == 0)
+    return 0.0;
+  return (double)rss/total;
+}
+
+static bool is_digit(const char *str) {
+  while(*str != '\0') {
+    if(!isdigit(*str)) return false;
+  }
+  return true;
+}
+
+static int get_pids(int** pids) {
+  DIR *d = NULL;
+  struct dirent *dir = NULL;
+  int *ret = NULL;
+  d = opendir("/proc");
+  check(d, "Couldn't open /proc");
+
+  ret = calloc(1, sizeof(int));
+  int i = 0;
+
+  while ((dir = readdir(d)) != NULL) {
+    if(!is_digit(dir->d_name))
+      continue;
+
+    ret[i] = (int)strtol(dir->d_name, NULL, 10);
+    i++;
+    ret = realloc(ret, (i+1)*sizeof(int));
+  }
+  closedir(d);
+
+  *pids = ret;
+
+error:
+  if(d) closedir(d);
+  if(ret) free(ret);
+  return -1;
+}
+
+/* TBD error checking */
+ProcInfo* process_children(Proc *p) {
+  static hash_t *pmap = NULL;
+  if(pmap == NULL)
+    pmap = hash_new();
+
+  char tmp[50];
+  ProcInfo *ret = calloc(1, sizeof(ProcInfo));
+
+  // fill a
+  int* pids;
+  int num_pids = get_pids(&pids);
+  int i;
+  hash_t *a = hash_new();
+  for(i = 0;i < num_pids;i++) {
+    sprintf(tmp, "%d", pids[i]);
+    hash_set(a, tmp, (void*)true);
+  }
+
+  // fill b
+  hash_t *b = hash_new();
+  hash_each_key(pmap, {
+      hash_set(b, (char *)key, (void*)true);
+    });
+
+  // fill new_pids and gone_pids
+  hash_t *new_pids = hash_new();
+
+
+  // new_pids = all in a but not in b
+  hash_each_key(a, {
+      if(!hash_has(b, (char *)key)) {
+      hash_set(new_pids, (char *)key, (void*)true);
+    }
+  });
+
+  // gone_pids = all in b but not in a
+  hash_each_key(b, {
+    if(!hash_has(a, (char *)key)) {
+      // TBD free process
+      hash_del(pmap, (char *)key);
+    }
+  });
+
+  // Processes already in pmap
+  int j = 0;
+  Proc* proc;
+  hash_each_val(pmap, {
+      proc = (Proc *)val;
+      if(!process_is_running(proc)) {
+	ret->processes = process_new(proc->pid);
+	// TBD: Free
+      } else 
+	ret->processes[j] = *proc;
+      j++;
+      ret->processes = realloc(ret->processes, (j+1)*sizeof(Proc *));
+    });
+
+  // New processes
+  Proc *new_proc;
+  hash_each_key(new_pids, {
+      new_proc = process_new((int)strtol(key, NULL, 10));
+      ret->processes[j] = *new_proc;
+      free(proc);
+
+      j++;
+      ret->processes = realloc(ret->processes, (j+1)*sizeof(Proc *));
+    });
+
+  return ret;
+}
+
+int process_send_signal(Proc *p, int sig) {
+  int ret = kill(p->pid, sig);
+  if(ret == -1) {
+    if(errno == ESRCH) {
+      p->gone = true;
+    }
+  }
+
+  return ret;
+}
+
+int process_suspend(Proc *p) {
+  return process_send_signal(p, SIGSTOP);
+}
+
+int process_resume(Proc *p) {
+  return process_send_signal(p, SIGCONT);
+}
+
+int process_terminate(Proc *p) {
+  return process_send_signal(p, SIGTERM);
+}
+
+int process_kill(Proc *p) {
+  return process_send_signal(p, SIGKILL);
+}
+
+bool process_is_running(Proc *p) {
+  /* TBD: Implement */
+  return true;
 }
 
 Proc_MemoryInfo* process_memory_info(Proc *p) {
@@ -1587,7 +1756,7 @@ static char* b16decode(char *str) {
     ret[i/2] += (str[i+1] >= 'A' ? str[i+1]-'A' : str[i+1]-'0');
   }
   return ret;
-   
+
 error:
     if(ret) free(ret);
     return NULL;
@@ -1607,11 +1776,11 @@ http://linuxdevcenter.com/pub/a/linux/2000/11/16/LinuxAdmin.html
 */
 static struct Proc_Addr * decode_address(char *addr, enum connection_family family) {
   char *c_ip = NULL, *c_port = NULL;
-  char *ip = NULL, *tmp = NULL;  
+  char *ip = NULL, *tmp = NULL;
   const char *r;
   int port;
   struct Proc_Addr *ret = calloc(1, sizeof(struct Proc_Addr));
-  
+
   c_ip = strtok(addr, ":");
   c_port = strtok(NULL, ":");
 
@@ -1683,7 +1852,7 @@ Proc_ConnectionsInfo* process_inet(
     for(i = 0;i < inode_info->nitems; i++) {
       if(inode_info->keys[i] == inode) {
 	if(n != NULL) {
-	  /* We assume inet socks are unique and error out if 
+	  /* We assume inet socks are unique and error out if
 	     there ar multiple references to the same inode */
 	}
 	n = inode_info->values + i;
@@ -1700,7 +1869,7 @@ Proc_ConnectionsInfo* process_inet(
     } else {
       cur_connection->status = TCP_NONE;
     }
-    
+
   }
 error:
   return NULL;
@@ -1754,7 +1923,7 @@ Proc_ConnectionsInfo *process_connections(Proc* process, enum connection_filter 
   default:
     sentinel("Should never happen");
   }
-  
+
   bool kind_in_round[5] = {has_tcp4, has_tcp6, has_udp4, has_udp6, has_unix };
   enum connection_family fam[5] = {PS_AF_INET, PS_AF_INET6, PS_AF_INET, PS_AF_INET6, PS_AF_UNIX};
   enum connection_type typ[5] = {PS_SOCK_STREAM, PS_SOCK_STREAM, PS_SOCK_DGRAM,
@@ -1776,7 +1945,7 @@ Proc_ConnectionsInfo *process_connections(Proc* process, enum connection_filter 
 
 
   free(inodes);
-  
+
   return ret;
 error:
   if(inodes) free(inodes);

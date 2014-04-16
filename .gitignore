@@ -1,6 +1,7 @@
 a.out
 *.o
 driver
+proc_driver
 nul
 notes.org
 .ruby-version

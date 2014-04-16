@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 
+typedef struct Proc Proc;
+
 /* Taken from include/net/tcp_states.h in the linux kernel */
 enum tcp_states {
     TCP_ESTABLISHED = 1,
@@ -171,7 +173,12 @@ typedef struct {
   long int hard;
 } Proc_RlimitVal;
 
-typedef struct Proc Proc;
+typedef struct {
+  int nitems;
+  Proc *processes;
+} ProcInfo;
+
+
 Proc* process_new(pid_t pid);
 pid_t proces_pid(Proc *process);
 pid_t process_ppid(Proc *process);
@@ -182,16 +189,10 @@ Proc_GroupIDs* process_gids(Proc *p);
 Proc_RlimitVal* process_rlimit(Proc *process, enum cpslib_rlimit resource); 
 int process_set_rlimit(Proc *process, enum cpslib_rlimit resource, Proc_RlimitVal *value);
 int process_num_fds(Proc *process);
-// process_cpu_percent
-// process_memory_percent
+ProcInfo* process_children(Proc *process);
 // process_children
-// process_is_running
-// process_send_signal
-// process_suspend
-// process_resume
-// process_terminate
-// process_kill
 // process_wait (delete wait_for)
+bool process_is_running(Proc *process);
 int process_free(Proc *process);
 char* process_name(Proc *process);
 char* process_exe(Proc *process);
@@ -199,6 +200,7 @@ char* process_cmdline(Proc *process);
 char* process_terminal(Proc *process);
 Proc_IOCounters* process_io_counters(Proc *process);
 Proc_CPUTimes* process_cpu_times(Proc *process);
+double process_memory_percent(Proc *process);
 double process_cpu_percent(Proc *process);
 int process_wait(Proc *process, double timeout, bool *is_child);
 double process_create_time(Proc *process);
