@@ -184,18 +184,35 @@ typedef struct {
   unsigned int sgid;
   char *username;
   char *terminal;
+  // char *cwd
+  //unsigned int nice;
+  // ioprio_class ionice;
+
 } Process;
+
+//*Process process_get_parent();
+//proc_status process_get_status();
+//rlimit process_get_rlimit();
+//int process_io_counters();
+//int process_num_ctx_switches();
+//int process_num_fds();
+//int num_handles();
+//int num_threads();
+
 
 int disk_usage(char [], DiskUsage *);
 
 DiskPartitionInfo *disk_partitions();
 DiskPartitionInfo *disk_partitions_phys();
+//DiskPartitionInfo *disk_partitions_physical(); ?
 void free_disk_partition_info(DiskPartitionInfo *);
 
 DiskIOCounterInfo *disk_io_counters();
 void free_disk_iocounter_info(DiskIOCounterInfo *);
+//DiskIOCounterInfo *disk_io_counters_per_disk(); ?
 
 NetIOCounterInfo *net_io_counters();
+//NetIOCounterInfo *net_io_counters_per_nic(); ?
 void free_net_iocounter_info(NetIOCounterInfo *);
 
 UsersInfo *get_users();
