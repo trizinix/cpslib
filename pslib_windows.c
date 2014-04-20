@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <winsock2.h>
+#include <iphlpapi.h>
+
 
 #include "pslib.h"
 #include "common.h"
@@ -112,7 +114,7 @@ DiskPartitionInfo *disk_partitions(bool all) {
 
 		d->device = strdup(drive_letter);
 		d->mountpoint = strdup(drive_letter);
-		d->fstype = strdup(fs_type);
+		d->fstype = strdup((const char*)fs_type);
 		d->opts = strdup(opts);
 
 		ret->nitems++;
@@ -157,7 +159,7 @@ DiskIOCounterInfo *disk_io_counters() {
 	int devNum;
 
 	for (devNum = 0;; devNum++) {
-		sprintf(szDevice, "\\\\.\\PhysicalDrive%d", devNum);
+		sprintf_s(szDevice, sizeof(szDevice), "\\\\.\\PhysicalDrive%d", devNum);
 		hDevice = CreateFile(szDevice, 0, FILE_SHARE_READ | FILE_SHARE_WRITE,
 			NULL, OPEN_EXISTING, 0, NULL);
 
@@ -172,11 +174,10 @@ DiskIOCounterInfo *disk_io_counters() {
 			&disk_perf, sizeof(DISK_PERFORMANCE),
 			&dwSize, NULL))
 		{
-			sprintf(szDeviceDisplay, "PhysicalDrive%d", devNum);
+			sprintf_s(szDeviceDisplay, sizeof(szDeviceDisplay), "PhysicalDrive%d", devNum);
 			ci->name = strdup(szDeviceDisplay);
 			ci->reads = disk_perf.ReadCount;
 			ci->writes = disk_perf.WriteCount;
-			printf("%ld - %ld  sizeof: %d - %d\n\n", ci->reads, ci->writes, disk_perf.ReadCount, disk_perf.WriteCount);
 			ci->readbytes = disk_perf.BytesRead.QuadPart;
 			ci->writebytes = disk_perf.BytesWritten.QuadPart;
 			ci->readtime = (disk_perf.ReadTime.QuadPart * 10) / 1000;
@@ -202,5 +203,105 @@ DiskIOCounterInfo *disk_io_counters() {
 	return ret;
 
 error:
+	return NULL;
+}
+
+NetIOCounterInfo *net_io_counters() {
+	int attempts = 0;
+	int outBufLen = 15000;
+	char ifname[2000];
+	DWORD dwRetVal = 0;
+	MIB_IFROW *pIfRow = NULL;
+	ULONG flags = 0;
+	ULONG family = AF_UNSPEC;
+	PIP_ADAPTER_ADDRESSES pAddresses = NULL;
+	PIP_ADAPTER_ADDRESSES pCurrAddresses = NULL;
+
+	PyObject *py_retdict = PyDict_New();
+	PyObject *py_nic_info = NULL;
+	PyObject *py_nic_name = NULL;
+
+	if (py_retdict == NULL) {
+		return NULL;
+	}
+	do {
+		pAddresses = (IP_ADAPTER_ADDRESSES *)malloc(outBufLen);
+		if (pAddresses == NULL) {
+			PyErr_NoMemory();
+			goto error;
+		}
+
+		dwRetVal = GetAdaptersAddresses(family, flags, NULL, pAddresses,
+			&outBufLen);
+		if (dwRetVal == ERROR_BUFFER_OVERFLOW) {
+			free(pAddresses);
+			pAddresses = NULL;
+		}
+		else {
+			break;
+		}
+
+		attempts++;
+	} while ((dwRetVal == ERROR_BUFFER_OVERFLOW) && (attempts < 3));
+
+	if (dwRetVal != NO_ERROR) {
+		PyErr_SetString(PyExc_RuntimeError, "GetAdaptersAddresses() failed.");
+		goto error;
+	}
+
+	pCurrAddresses = pAddresses;
+	while (pCurrAddresses) {
+		py_nic_name = NULL;
+		py_nic_info = NULL;
+		pIfRow = (MIB_IFROW *)malloc(sizeof(MIB_IFROW));
+
+		if (pIfRow == NULL) {
+			PyErr_NoMemory();
+			goto error;
+		}
+
+		pIfRow->dwIndex = pCurrAddresses->IfIndex;
+		dwRetVal = GetIfEntry(pIfRow);
+		if (dwRetVal != NO_ERROR) {
+			PyErr_SetString(PyExc_RuntimeError, "GetIfEntry() failed.");
+			goto error;
+		}
+
+		py_nic_info = Py_BuildValue("(IIIIIIII)",
+			pIfRow->dwOutOctets,
+			pIfRow->dwInOctets,
+			pIfRow->dwOutUcastPkts,
+			pIfRow->dwInUcastPkts,
+			pIfRow->dwInErrors,
+			pIfRow->dwOutErrors,
+			pIfRow->dwInDiscards,
+			pIfRow->dwOutDiscards);
+		if (!py_nic_info)
+			goto error;
+
+		sprintf(ifname, "%wS", pCurrAddresses->FriendlyName);
+		py_nic_name = Py_BuildValue("s", ifname);
+		if (py_nic_name == NULL)
+			goto error;
+		if (PyDict_SetItem(py_retdict, py_nic_name, py_nic_info))
+			goto error;
+		Py_XDECREF(py_nic_name);
+		Py_XDECREF(py_nic_info);
+
+		free(pIfRow);
+		pCurrAddresses = pCurrAddresses->Next;
+	}
+
+	free(pAddresses);
+	return py_retdict;
+
+error:
+	Py_XDECREF(py_nic_name);
+	Py_XDECREF(py_nic_info);
+	Py_DECREF(py_retdict);
+	if (pAddresses != NULL)
+		free(pAddresses);
+	if (pIfRow != NULL)
+		free(pIfRow);
 	return NULL;
 }

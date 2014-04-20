@@ -39,11 +39,11 @@ grep_awk(FILE *fp, char *fstr, int nfield, char *delim)
 {
   char *line = (char *)calloc(500, sizeof(char));
   check_mem(line);
-  char *ret = NULL;
+  char *ret = NULL, *next_token = NULL;
   int i;
   while (fgets(line, 400, fp) != NULL) {
     if (strncasecmp(line, fstr, strlen(fstr)) == 0){
-      ret = strtok(line, delim);
+      ret = strtok_s(line, delim, &next_token);
       for (i = 0; i < nfield; i++) {
         ret = strtok(NULL, delim);
       }

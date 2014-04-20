@@ -30,10 +30,10 @@ char *cpslib_strdup(char *s );
      _a < _b ? _a : _b; })
 #endif
 
+#ifdef HAVE__STRDUP
+# define strdup _strdup
+#else
 #ifndef HAVE_STRDUP
-# ifdef HAVE__STRDUP
-#  define strdup _strdup
-# else
 #  define strdup cpslib_strdup
 # endif
 #endif

@@ -1,7 +1,10 @@
 #ifndef __pslib_linux_h
 #define __pslib_linux_h
 
+#include <stdbool.h>
+
 enum proc_status {
+  STATUS_UNKNOWN,
   STATUS_RUNNING,
   STATUS_SLEEPING,
   STATUS_DISK_SLEEP,
@@ -23,24 +26,27 @@ enum ioprio_class {
   IOPRIO_CLASS_IDLE
 };
 
-enum rlimit {
-  RLIMIT_INFINITY,
-  RLIMIT_AS,
-  RLIMIT_CORE,
-  RLIMIT_CPU,
-  RLIMIT_DATA,
-  RLIMIT_FSIZE,
-  RLIMIT_LOCKS,
-  RLIMIT_MEMLOCK,
-  RLIMIT_MSGQUEUE,
-  RLIMIT_NICE,
-  RLIMIT_NOFILE,
-  RLIMIT_NPROC,
-  RLIMIT_RSS,
-  RLIMIT_RTPRIO,
-  RLIMIT_RTTIME,
-  RLIMIT_SIGPENDING,
-  RLIMIT_STACK
+/* Same values than RLIMIT_* in resource.h 
+   TBD: write converting function, some platforms could overrite
+   the values here */
+enum cpslib_rlimit {
+  CPSLIB_RLIMIT_CPU = 0,
+  CPSLIB_RLIMIT_FSIZE = 1,
+  CPSLIB_RLIMIT_DATA = 2,
+  CPSLIB_RLIMIT_STACK = 3,
+  CPSLIB_RLIMIT_CORE = 4,
+  CPSLIB_RLIMIT_RSS = 5,
+  CPSLIB_RLIMIT_NPROC = 6,
+  CPSLIB_RLIMIT_NOFILE = 7,
+  CPSLIB_RLIMIT_MEMLOCK = 8,
+  CPSLIB_RLIMIT_AS = 9,
+  CPSLIB_RLIMIT_LOCKS = 10,
+  CPSLIB_RLIMIT_SIGPENDING = 11,
+  CPSLIB_RLIMIT_MSGQUEUE = 12,
+  CPSLIB_RLIMIT_NICE = 13,
+  CPSLIB_RLIMIT_RTPRIO = 14,
+  CPSLIB_RLIMIT_RTTIME = 15,
+  CPSLIB_RLIMIT_INFINITY = (~0UL)
 };
 
 enum con_status {
@@ -62,19 +68,18 @@ enum con_status {
 };
 
 enum proc_priority {
-  PRIO_ABOVE_NORMAL_PRIORITY_CLASS,
-  PRIO_BELOW_NORMAL_PRIORITY_CLASS,
-  PRIO_HIGH_PRIORITY_CLASS,
-  PRIO_IDLE_PRIORITY_CLASS,
-  PRIO_NORMAL_PRIORITY_CLASS,
-  PRIO_REALTIME_PRIORITY_CLASS
+  CPS_ABOVE_NORMAL_PRIORITY_CLASS,
+  CPS_BELOW_NORMAL_PRIORITY_CLASS,
+  CPS_HIGH_PRIORITY_CLASS,
+  CPS_IDLE_PRIORITY_CLASS,
+  CPS_NORMAL_PRIORITY_CLASS,
+  CPS_REALTIME_PRIORITY_CLASS
 };
 
-
 typedef struct {
-  unsigned long long total;
-  unsigned long long used;
-  unsigned long long free;
+  unsigned long total;
+  unsigned long used;
+  unsigned long free;
   float percent;
 } DiskUsage;
 
@@ -199,24 +204,25 @@ typedef struct {
 //int num_threads();
 
 
-int disk_usage(char [], DiskUsage *);
+int disk_usage(const char*, DiskUsage *);
 
-DiskPartitionInfo *disk_partitions(bool);
+DiskPartitionInfo *disk_partitions(void);
+DiskPartitionInfo *disk_partitions_phys(void);
 //DiskPartitionInfo *disk_partitions_physical(); ?
 void free_disk_partition_info(DiskPartitionInfo *);
 
-DiskIOCounterInfo *disk_io_counters();
+DiskIOCounterInfo *disk_io_counters(void);
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 //DiskIOCounterInfo *disk_io_counters_per_disk(); ?
 
-NetIOCounterInfo *net_io_counters();
+NetIOCounterInfo *net_io_counters(void);
 //NetIOCounterInfo *net_io_counters_per_nic(); ?
 void free_net_iocounter_info(NetIOCounterInfo *);
 
-UsersInfo *get_users();
+UsersInfo *get_users(void);
 void free_users_info(UsersInfo *);
 
-unsigned long int get_boot_time();
+long int get_boot_time(void);
 
 int virtual_memory(VmemInfo *);
 int swap_memory(SwapMem *);
@@ -227,13 +233,16 @@ int cpu_times_per_cpu(CpuTimes **);
 int cpu_times_percent(CpuTimes *);
 int cpu_times_percent_per_cpu(CpuTimes **);
 
-double cpu_percent();
+double cpu_percent(void);
 int cpu_percent_per_cpu(double **);
 
-int cpu_count(int);
+int cpu_count(bool);
 
 Process *get_process(unsigned int);
 void free_process(Process *);
 
 #endif
+// disk_io_counters_per_disk
+// net_io_counters_per_nic
+// net_connections
 
