@@ -5,7 +5,7 @@
 #include "pslib.h"
 
 void
-test_diskusage()
+test_diskusage(void)
 {
   DiskUsage du;
   printf(" Disk usage \n");
@@ -15,7 +15,7 @@ test_diskusage()
 }
 
 void
-test_diskpartitioninfo()
+test_diskpartitioninfo(void)
 {
   int i;
   DiskPartitionInfo *dp;
@@ -39,7 +39,7 @@ test_diskpartitioninfo()
 
 
 void
-test_diskpartitioninfo_phys() {
+test_diskpartitioninfo_phys(void) {
   int i;
   DiskPartitionInfo *dp;
   printf(" Physical Disk partitions \n");
@@ -61,7 +61,7 @@ test_diskpartitioninfo_phys() {
 }
 
 void
-test_diskiocounters()
+test_diskiocounters(void)
 {
   DiskIOCounterInfo *d;
   DiskIOCounters *dp;
@@ -90,7 +90,7 @@ test_diskiocounters()
 }
 
 void
-test_netiocounters()
+test_netiocounters(void)
 {
   NetIOCounterInfo *n;
   NetIOCounters *dp;
@@ -116,7 +116,7 @@ test_netiocounters()
 }
 
 void
-test_getusers()
+test_getusers(void)
 {
   UsersInfo *r;
   int i;
@@ -139,7 +139,7 @@ test_getusers()
 }
 
 void
-test_boottime()
+test_boottime(void)
 {
   long t = get_boot_time();
   printf(" Boot time \n");
@@ -151,7 +151,7 @@ test_boottime()
 }
 
 void
-test_virtualmeminfo()
+test_virtualmeminfo(void)
 {
   VmemInfo r;
   int t = virtual_memory(&r);
@@ -173,7 +173,7 @@ test_virtualmeminfo()
 }
 
 void
-test_swap()
+test_swap(void)
 {
   SwapMem r;
   int t = swap_memory(&r);
@@ -192,7 +192,7 @@ test_swap()
 }
 
 void
-test_cpu_times()
+test_cpu_times(void)
 {
   CpuTimes r;
   int t = cpu_times(&r);
@@ -216,7 +216,7 @@ test_cpu_times()
 }
 
 void
-test_cpu_times_percent()
+test_cpu_times_percent(void)
 {
   CpuTimes r;
   int t = cpu_times_percent(&r);
@@ -240,11 +240,12 @@ test_cpu_times_percent()
 }
 
 void
-test_cpu_times_percent_per_cpu() {
+test_cpu_times_percent_per_cpu(void) {
   CpuTimes *r = NULL;
 
   int count = cpu_times_percent_per_cpu(&r);
   if(count < 0) {
+    free(r);
     printf("Aborting test cpu_times_percent_per_cpu\n");
     return;
   }
@@ -262,16 +263,17 @@ test_cpu_times_percent_per_cpu() {
 }
 
 void
-test_cpu_percent() {
+test_cpu_percent(void) {
   double r = cpu_percent();
   printf("\nCPU Percent: %f\n\n", r);
 }
 
 void
-test_cpu_percent_per_cpu() {
+test_cpu_percent_per_cpu(void) {
   double *r = NULL;
   int count = cpu_percent_per_cpu(&r);
   if(count < 0) {
+    free(r);
     printf("Aborting test cpu_percent_per_cpu\n");
     return;
   }
@@ -286,10 +288,11 @@ test_cpu_percent_per_cpu() {
 }
 
 void
-test_cpu_times_per_cpu() {
+test_cpu_times_per_cpu(void) {
   CpuTimes* r = NULL;
   int count = cpu_times_per_cpu(&r);
   if(count < 0) {
+    free(r);
     printf("Aborting test cpu_times_per_cpu\n");
     return;
   }
@@ -310,7 +313,7 @@ test_cpu_times_per_cpu() {
 }
 
 void
-test_cpu_count()
+test_cpu_count(void)
 {
   int logical;
   int physical;
@@ -325,7 +328,7 @@ test_cpu_count()
   printf("\n");
 }
 
-void test_process()
+void test_process(void)
 {
   pid_t pid = getpid();
   Process *process = get_process(pid);

@@ -21,7 +21,7 @@
 
 /* Internal functions */
 static int
-logical_cpu_count()
+logical_cpu_count(void)
 {
   int ret;
   ret = (int)sysconf(_SC_NPROCESSORS_ONLN);
@@ -33,7 +33,7 @@ logical_cpu_count()
 }
 
 static int
-physical_cpu_count()
+physical_cpu_count(void)
 {
   FILE * fp = NULL;
   size_t s = 100;
@@ -280,7 +280,7 @@ get_terminal(unsigned int pid)
 }
 
 static long
-get_clock_ticks() {
+get_clock_ticks(void) {
   static long ret;
   if(ret == 0) {
     ret = sysconf(_SC_CLK_TCK);
@@ -373,7 +373,7 @@ f_diff_percent(double f2, double f1, double all_delta) {
 
 /* Public functions */
 int
-disk_usage(char path[], DiskUsage *ret)
+disk_usage(const char *path, DiskUsage *ret)
 {
   struct statvfs s;
   int r;
@@ -390,7 +390,7 @@ error:
 }
 
 DiskPartitionInfo*
-disk_partitions_phys()
+disk_partitions_phys(void)
 {
   FILE *fs = fopen("/proc/filesystems", "r");
   check(fs, "Couldn't open /proc/filesystems");
@@ -399,7 +399,7 @@ disk_partitions_phys()
 
   int nparts = 5;
   DiskPartition *partitions = calloc(nparts, sizeof(DiskPartition));
-  DiskPartitionInfo *ret = malloc(sizeof(DiskPartitionInfo));
+  DiskPartitionInfo *ret = calloc(1, sizeof(DiskPartitionInfo));
   DiskPartition *d = partitions;
   check_mem(partitions);
   check_mem(ret);
@@ -420,7 +420,6 @@ disk_partitions_phys()
       devs++;
     }
   }
-  fclose(fs);
 
   DiskPartitionInfo *tmp = disk_partitions();
   check(tmp, "disk_partitions failed");
@@ -455,15 +454,20 @@ disk_partitions_phys()
     }
   }
   free_disk_partition_info(tmp);
+  fclose(fs);
+
   return ret;
 
 error:
-    free_disk_partition_info(tmp);
-    return NULL;
+  if(tmp) free_disk_partition_info(tmp);
+  if(fs) fclose(fs);
+  if(!tmp && partitions) free(partitions);
+  if(ret) free(ret);
+  return NULL;
 }
 
 DiskPartitionInfo *
-disk_partitions()
+disk_partitions(void)
 {
   FILE *file = NULL;
   struct mntent *entry;
@@ -471,8 +475,8 @@ disk_partitions()
   DiskPartition *partitions = (DiskPartition *)calloc(nparts, sizeof(DiskPartition));
   DiskPartitionInfo *ret = (DiskPartitionInfo *)calloc(1, sizeof(DiskPartitionInfo));
   DiskPartition *d = partitions;
-  check_mem(partitions);
   check_mem(ret);
+  check_mem(partitions);
 
   ret->nitems = 0;
   ret->partitions = partitions;
@@ -512,6 +516,7 @@ disk_partitions()
 void
 free_disk_partition_info(DiskPartitionInfo *di)
 {
+  if(!di) return;
   DiskPartition *d = di->partitions;
   while(di->nitems--) {
     free(d->device);
@@ -525,7 +530,7 @@ free_disk_partition_info(DiskPartitionInfo *di)
 }
 
 DiskIOCounterInfo *
-disk_io_counters()
+disk_io_counters(void)
 {
   const int sector_size = 512;
 
@@ -556,12 +561,13 @@ disk_io_counters()
       nparts++; /* TBD: We can't handle more than 30 partitions now */
     }
   }
-  fclose(fp);
 
   nmemb = nparts;
   counters = (DiskIOCounters *)calloc(nparts, sizeof(DiskIOCounters));
   check_mem(counters);
   ci = counters;
+
+  fclose(fp);
   fp = fopen("/proc/diskstats", "r");
   check(fp, "Couldn't open /proc/diskstats");
 
@@ -634,11 +640,11 @@ free_disk_iocounter_info(DiskIOCounterInfo *di)
 }
 
 NetIOCounterInfo *
-net_io_counters()
+net_io_counters(void)
 {
   FILE *fp = NULL;
   NetIOCounterInfo *ret = (NetIOCounterInfo *)calloc(1, sizeof(NetIOCounterInfo));
-  NetIOCounters *counters = (NetIOCounters *)calloc(15, sizeof(NetIOCounters));
+  NetIOCounters *counters = (NetIOCounters *)calloc(1, sizeof(NetIOCounters));
   NetIOCounters *nc = counters;
   int i = 0, ninterfaces = 0;
   char *line = (char *)calloc(200, sizeof(char));
@@ -646,6 +652,10 @@ net_io_counters()
   check_mem(line);
   check_mem(counters);
   check_mem(ret);
+
+  ret->iocounters = counters;
+  ret->nitems = 0;
+
   fp = fopen("/proc/net/dev", "r");
   check(fp, "Couldn't open /proc/net/dev");
 
@@ -684,20 +694,21 @@ net_io_counters()
     tmp = strtok(NULL, " \n"); /* Drops out 10*/
     nc->dropout = strtoul(tmp, NULL, 10);
 
-    nc++;
+    counters = realloc(counters, (ninterfaces+1)*sizeof(NetIOCounters));
+    nc = counters + ninterfaces;
   }
   fclose(fp);
   free(line);
-  ret->iocounters = counters;
+
   ret->nitems = ninterfaces;
   return ret;
 
 error:
-  /* TBD: ret not freed here */
   if (fp) fclose(fp);
   if (line) free(line);
-  if (counters) free(counters);
-  if (nc) free(nc);
+  if (!ret && counters) free(counters);
+  if (ret) free_net_iocounter_info(ret);
+
   return NULL;
 }
 
@@ -714,7 +725,7 @@ free_net_iocounter_info(NetIOCounterInfo *d)
 
 
 UsersInfo *
-get_users ()
+get_users (void)
 {
   int nusers = 100;
   UsersInfo *ret = (UsersInfo *)calloc(1, sizeof(UsersInfo));
@@ -758,7 +769,8 @@ get_users ()
   return ret;
 
 error:
-  free_users_info(ret);
+  if(!ret && users) free(users);
+  if(ret) free_users_info(ret);
   return NULL;
 
 }
@@ -778,7 +790,7 @@ free_users_info(UsersInfo * ui)
 }
 
 long int
-get_boot_time()
+get_boot_time(void)
 {
   FILE *fp = fopen("/proc/stat", "r");
   char *line = (char *)calloc(200, sizeof(char));
@@ -909,54 +921,6 @@ error:
   return -1;
 }
 
-int swap_memory(SwapMem *ret) {
-  struct sysinfo info;
-  FILE *fp = NULL;
-
-  unsigned long totalswap, freeswap, usedswap;
-  unsigned long sin = -1, sout = -1;
-  check(sysinfo(&info) == 0, "sysinfo failed");
-
-  totalswap = info.totalswap;
-  freeswap = info.freeswap;
-  usedswap = totalswap - freeswap;
-
-  fp = fopen("/proc/vmstat", "r");
-  check(fp, "Couldn't open /proc/vmstat");
-
-  char *line = (char *)calloc(50, sizeof(char));
-  check_mem(line);
-
-  while (fgets(line, 40, fp) != NULL) {
-    if(strncmp(line, "pswpin", 6) == 0) {
-      sin = strtoul(line+7, NULL, 10);
-    }
-    if (strncmp(line, "pswpout", 7) == 0){
-      sout = strtoul(line+8, NULL, 10);
-    }
-  }
-  if (sin == -1 || sout == -1) {
-    log_warn("Couldn't determine 'sin' and 'sout' swap stats. Setting them to 0");
-    sout = sin = 0;
-  }
-  fclose(fp);
-  free(line);
-
-  ret->total = totalswap;
-  ret->used = usedswap;
-  ret->free = freeswap;
-  ret->percent = percentage(usedswap, totalswap);
-  ret->sin = sin;
-  ret->sout = sout;
-
-  return 0;
-error:
-  if(fp) fclose(fp);
-  if (line) free(line);
-  return -1;
-}
-
-
 int cpu_times(CpuTimes *ret) {
   FILE *fp = NULL;
   fp = fopen("/proc/stat", "r");
@@ -1021,196 +985,7 @@ error:
 }
 
 double
-cpu_percent() {
-  static CpuTimes last_cpu_times;
-
-  CpuTimes t1 = last_cpu_times;
-  int r = cpu_times(&last_cpu_times);
-
-  if(r < 0) {
-    log_warn("Couldnt fetch cpu_times return 0.0");
-    return 0.0;
-  }
-
-  return calc_cpu_busy_diff(&t1, &last_cpu_times);
-}
-
-
-// seems to report too much
-int
-cpu_percent_per_cpu(double **ret) {
-  static int last_cpu_count;
-  static CpuTimes* last_cpu_times;
-
-  CpuTimes *t1 = last_cpu_times;
-  int cpus = cpu_times_per_cpu(&last_cpu_times);
-  check(cpus > 0, "Couldn't find a cpu");
-
-  if(t1 == NULL) {
-    t1 = calloc(cpus, sizeof(CpuTimes));
-    last_cpu_count = cpus;
-  }
-
-  *ret = calloc(cpus, sizeof(double));
-  check_mem(*ret);
-
-  int min_cpus = min(cpus, last_cpu_count);
-  int i;
-  for(i=0;i < min_cpus; i++) {
-    (*ret)[i] = calc_cpu_busy_diff(t1+i, last_cpu_times+i);
-  }
-
-  last_cpu_count = cpus;
-
-  free(t1);
-  return min_cpus;
-
-error:
-  free(t1);
-  return -1;
-}
-
-
-
-int
-cpu_times_percent(CpuTimes *ret) {
-  static CpuTimes last_cpu_times;
-
-  CpuTimes t1 = last_cpu_times;
-  int r = cpu_times(&last_cpu_times);
-
-  if(r < 0) {
-    log_warn("Couldnt fetch cpu_times");
-    return -1;
-  }
-
-  double all_delta = sum_cpu_time(&last_cpu_times) - sum_cpu_time(&t1);
-
-  ret->user = f_diff_percent(last_cpu_times.user, t1.user, all_delta);
-  ret->system = f_diff_percent(last_cpu_times.system, t1.system, all_delta);
-  ret->idle = f_diff_percent(last_cpu_times.idle, t1.idle, all_delta);
-  ret->nice = f_diff_percent(last_cpu_times.nice, t1.nice, all_delta);
-  ret->iowait = f_diff_percent(last_cpu_times.iowait, t1.iowait, all_delta);
-  ret->irq = f_diff_percent(last_cpu_times.irq, t1.irq, all_delta);
-  ret->softirq = f_diff_percent(last_cpu_times.softirq, t1.softirq, all_delta);
-  ret->steal = f_diff_percent(last_cpu_times.steal, t1.steal, all_delta);
-  ret->guest = f_diff_percent(last_cpu_times.guest, t1.guest, all_delta);
-  ret->guest_nice = f_diff_percent(last_cpu_times.guest_nice, t1.guest_nice, all_delta);
-
-  return 0;
-}
-
-int
-cpu_times_percent_per_cpu(CpuTimes **ret) {
-  static int last_cpu_count;
-  static CpuTimes* last_cpu_times;
-
-  CpuTimes *t1 = last_cpu_times;
-  int cpus = cpu_times_per_cpu(&last_cpu_times);
-  check(cpus > 0, "Couldn't find a cpu");
-
-  if(t1 == NULL) {
-    t1 = calloc(cpus, sizeof(CpuTimes));
-    last_cpu_count = cpus;
-  }
-
-  *ret = calloc(cpus, sizeof(CpuTimes));
-  check_mem(*ret);
-
-  int min_cpus = min(cpus, last_cpu_count);
-  int i;
-  for(i=0;i < min_cpus; i++) {
-    //(*ret)[i] = calc_cpu_busy_diff(t1+i, last_cpu_times+i);
-    double all_delta = sum_cpu_time(last_cpu_times+i) - sum_cpu_time(t1+i);
-
-    (*ret+i)->user = f_diff_percent((last_cpu_times+i)->user, (t1+i)->user, all_delta);
-    (*ret+i)->system = f_diff_percent((last_cpu_times+i)->system, (t1+i)->system, all_delta);
-    (*ret+i)->idle = f_diff_percent((last_cpu_times+i)->idle, (t1+i)->idle, all_delta);
-    (*ret+i)->nice = f_diff_percent((last_cpu_times+i)->nice, (t1+i)->nice, all_delta);
-    (*ret+i)->iowait = f_diff_percent((last_cpu_times+i)->iowait, (t1+i)->iowait, all_delta);
-    (*ret+i)->irq = f_diff_percent((last_cpu_times+i)->irq, (t1+i)->irq, all_delta);
-    (*ret+i)->softirq = f_diff_percent((last_cpu_times+i)->softirq, (t1+i)->softirq, all_delta);
-    (*ret+i)->steal = f_diff_percent((last_cpu_times+i)->steal, (t1+i)->steal, all_delta);
-    (*ret+i)->guest = f_diff_percent((last_cpu_times+i)->guest, (t1+i)->guest, all_delta);
-    (*ret+i)->guest_nice = f_diff_percent((last_cpu_times+i)->guest_nice, (t1+i)->guest_nice, all_delta);
-
-  }
-
-  last_cpu_count = cpus;
-  free(t1);
-  return min_cpus;
-
-error:
-  free(t1);
-  return -1;
-
-}
-
-int cpu_times(CpuTimes *ret) {
-  FILE *fp = NULL;
-  fp = fopen("/proc/stat", "r");
-  check(fp, "Couldn't open /proc/stat");
-
-  char *line = calloc(150, sizeof(char));
-  check_mem(line);
-  fgets(line, 140, fp);
-
-  int t = parse_proc_stat_line(line, ret);
-  check(t >= 0, "File /proc/stat is corrupted");
-
-  fclose(fp);
-  free(line);
-
-  return 0;
-error:
-  if(fp) fclose(fp);
-  if (line) free(line);
-  return -1;
-}
-
-int
-cpu_times_per_cpu(CpuTimes** ret) {
-  FILE *fp = NULL;
-  fp = fopen("/proc/stat", "r");
-  check(fp, "Couldn't open /proc/stat");
-
-  int t;
-
-  char *line = calloc(200, sizeof(char));
-  check_mem(line);
-  fgets(line, 190, fp); // skip first line
-
-  *ret = calloc(10, sizeof(CpuTimes));
-  check_mem(ret);
-
-  int cpus = 0;
-  while(1) {
-    fgets(line, 190, fp);
-    if(strncmp(line, "cpu", 3) != 0) break;
-
-    t = parse_proc_stat_line(line, *ret + cpus);
-    check(t >= 0, "File /proc/stat is corrupted");
-
-    cpus++;
-    if(cpus%10 == 9) {
-      CpuTimes* new_ret = realloc(*ret, (cpus+11)*sizeof(CpuTimes));
-      check_mem(new_ret);
-      *ret = new_ret;
-    }
-  }
-  fclose(fp);
-  free(line);
-  *ret = realloc(*ret, cpus*sizeof(CpuTimes));
-  return cpus;
-
-error:
-  if(fp) fclose(fp);
-  if (line) free(line);
-  return -1;
-}
-
-double
-cpu_percent() {
+cpu_percent(void) {
   static CpuTimes last_cpu_times;
 
   CpuTimes t1 = last_cpu_times;
@@ -1371,7 +1146,7 @@ get_process(unsigned pid)
   }
 
   gids = get_ids(pid, "Gid:");
-  if (uids) {
+  if (gids) {
     retval->gid = gids[0];
     retval->egid = gids[1];
     retval->sgid = gids[2];

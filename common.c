@@ -38,7 +38,7 @@ int_comp(const void *key, const void *memb)
 
 
 char *
-grep_awk(FILE *fp, char *fstr, int nfield, char *delim)
+grep_awk(FILE *fp, const char *fstr, int nfield, const char *delim)
 {
   char *line = (char *)calloc(500, sizeof(char));
   check_mem(line);
@@ -61,11 +61,12 @@ grep_awk(FILE *fp, char *fstr, int nfield, char *delim)
   free(line);
   return NULL;
  error:
+  if(line) free(line);
   return NULL;
 }
 
 char * /* Removes every char in chars from string */
-squeeze(char *string, char *chars)
+squeeze(char *string, const char *chars)
 {
   char *src = string;
   char *target = string;

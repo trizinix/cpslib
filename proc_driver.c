@@ -124,6 +124,7 @@ void test_proc_threads(Proc *process) {
     printf("Id=%lu ", cur->id);
     printf("(user_time=%f, system_time=%f)\n",cur->user_time, cur->system_time);
   }
+  free(threads);
 }
 
 void test_proc_nice(Proc *process) {

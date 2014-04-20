@@ -53,7 +53,7 @@ static inline int popcount(unsigned int x)
   }*/
 
 /* Renduntant function */
-static long get_clock_ticks() {
+static long get_clock_ticks(void) {
   static long ret;
   if(ret == 0) {
     ret = sysconf(_SC_CLK_TCK);
@@ -61,7 +61,7 @@ static long get_clock_ticks() {
   return ret;
 }
 
-static long get_page_size() {
+static long get_page_size(void) {
   static long ret;
   if(ret == 0) {
     ret = sysconf(_SC_PAGE_SIZE);
@@ -71,7 +71,7 @@ static long get_page_size() {
 
 /* Private functions */
 
-static double boot_time()
+static double boot_time(void)
 {
   static double btime;
   if(btime > 0) return btime;
@@ -591,6 +591,9 @@ double process_cpu_percent(Proc *p) {
   else
     overall_percent = ((delta_proc/delta_time) * 100) * num_cpus;
 
+  p->last_sys_cpu_times = st2;
+  p->last_proc_cpu_times = pt2;
+  free(pt1);
   return overall_percent;
 }
 
@@ -758,7 +761,7 @@ double process_create_time(Proc *p) {
   return 0.0;
 }
 
-static unsigned long total_memory() {
+static unsigned long total_memory(void) {
  static unsigned long total_phys_memory = 0;
 
   if(total_phys_memory != 0) {
@@ -815,7 +818,7 @@ static int get_pids(int** pids) {
   closedir(d);
 
   *pids = ret;
-
+  return 0;
 error:
   if(d) closedir(d);
   if(ret) free(ret);
@@ -885,12 +888,15 @@ ProcInfo* process_children(Proc *p) {
   hash_each_key(new_pids, {
       new_proc = process_new((int)strtol(key, NULL, 10));
       ret->processes[j] = *new_proc;
-      free(proc);
+      free(new_proc);
 
       j++;
       ret->processes = realloc(ret->processes, (j+1)*sizeof(Proc *));
     });
 
+  hash_free(a);
+  hash_free(b);
+  hash_free(new_pids);
   return ret;
 }
 
@@ -1707,6 +1713,7 @@ static InodeInfo* proc_inodes(Proc *p) {
       cur_node->fd = fds[i];
       ret->keys[j] = (int)strtoul(inode+8, NULL, 10);
       ret->values[j] = *cur_node;
+      free(cur_node);
 
       j++;
       ret->keys = realloc(ret->keys, (j+1)*sizeof(int));
@@ -1720,6 +1727,7 @@ static InodeInfo* proc_inodes(Proc *p) {
 
 error:
   if(fds) free(fds);
+  if(ret) free(ret);
   return NULL;
 }
 
@@ -1869,16 +1877,19 @@ Proc_ConnectionsInfo* process_inet(
     } else {
       cur_connection->status = TCP_NONE;
     }
-
+    free(status);
+    free(laddr);
+    free(raddr);
   }
 error:
+  if(ret) free(ret);
   return NULL;
 }
 
 Proc_ConnectionsInfo *process_connections(Proc* process, enum connection_filter filter) {
 
   int i;
-  Proc_ConnectionsInfo *ret = calloc(1, sizeof(Proc_ConnectionsInfo));
+  Proc_ConnectionsInfo *ret;
 
   InodeInfo *inodes = proc_inodes(process);
 
@@ -1928,7 +1939,7 @@ Proc_ConnectionsInfo *process_connections(Proc* process, enum connection_filter 
   enum connection_family fam[5] = {PS_AF_INET, PS_AF_INET6, PS_AF_INET, PS_AF_INET6, PS_AF_UNIX};
   enum connection_type typ[5] = {PS_SOCK_STREAM, PS_SOCK_STREAM, PS_SOCK_DGRAM,
 				 PS_SOCK_DGRAM, PS_SOCK_NONE};
-  char* name[5] = {"tcp", "tcp6", "udp", "udp6", "unix"};
+  const char* name[5] = {"tcp", "tcp6", "udp", "udp6", "unix"};
 
   for(i = 0;i < 5; i++) {
     char procfile[50];

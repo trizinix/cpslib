@@ -9,8 +9,8 @@
 float percentage(unsigned long int, unsigned long int);
 int str_comp(const void *, const void *);
 int int_comp(const void *, const void *);
-char *grep_awk(FILE *, char *, int, char *);
-char *squeeze(char *, char *);
+char *grep_awk(FILE *, const char *, int, const char *);
+char *squeeze(char *, const char *);
 int str_cmp(const void *a, const void *b);
 char* skip_whitespaces(char *pos);
 

@@ -205,25 +205,25 @@ typedef struct {
 //int num_threads();
 
 
-int disk_usage(char [], DiskUsage *);
+int disk_usage(const char*, DiskUsage *);
 
-DiskPartitionInfo *disk_partitions();
-DiskPartitionInfo *disk_partitions_phys();
+DiskPartitionInfo *disk_partitions(void);
+DiskPartitionInfo *disk_partitions_phys(void);
 //DiskPartitionInfo *disk_partitions_physical(); ?
 void free_disk_partition_info(DiskPartitionInfo *);
 
-DiskIOCounterInfo *disk_io_counters();
+DiskIOCounterInfo *disk_io_counters(void);
 void free_disk_iocounter_info(DiskIOCounterInfo *);
 //DiskIOCounterInfo *disk_io_counters_per_disk(); ?
 
-NetIOCounterInfo *net_io_counters();
+NetIOCounterInfo *net_io_counters(void);
 //NetIOCounterInfo *net_io_counters_per_nic(); ?
 void free_net_iocounter_info(NetIOCounterInfo *);
 
-UsersInfo *get_users();
+UsersInfo *get_users(void);
 void free_users_info(UsersInfo *);
 
-long int get_boot_time();
+long int get_boot_time(void);
 
 int virtual_memory(VmemInfo *);
 int swap_memory(SwapMem *);
@@ -234,7 +234,7 @@ int cpu_times_per_cpu(CpuTimes **);
 int cpu_times_percent(CpuTimes *);
 int cpu_times_percent_per_cpu(CpuTimes **);
 
-double cpu_percent();
+double cpu_percent(void);
 int cpu_percent_per_cpu(double **);
 
 int cpu_count(bool);

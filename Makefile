@@ -1,13 +1,15 @@
 CFLAGS=-g -Wall -Wextra -Wfloat-equal -Wundef -Wformat=2 -Winit-self -Wpointer-arith -Wcast-align 
-CFLAGS+=-Wstrict-overflow=5 -Wswitch-enum -Wunreachable-code -Wswitch-enum # -fsanitize=address
-CFLAGS+=-fno-omit-frame-pointer -std=gnu99
-#=-Wstrict-prototypes  -Wwrite-strings  -Wshadow
+CFLAGS+=-Wstrict-overflow=5 -Wswitch-enum -Wunreachable-code -Wswitch-enum -Wshadow -Wwrite-strings
+CFLAGS+=-fno-omit-frame-pointer -std=gnu99 -Wstrict-prototypes  
+#-fsanitize=address
 
 ifdef COMSPEC
 	PLATFORM := "WINDOWS"
 else
 	PLATFORM := "LINUX"
 endif
+
+all: proc_driver driver
 
 driver: driver.c pslib_linux.o common.o
 	gcc -D${PLATFORM} ${CFLAGS} driver.c pslib_linux.o common.o -lm -o driver
@@ -28,7 +30,7 @@ hash.o: deps/hash/hash.c deps/hash/hash.h deps/hash/khash.h
 	gcc -D${PLATFORM}  ${CFLAGS} -c deps/hash/hash.c -lm -o hash.o
 
 clean:
-	rm -f *.o a.out driver
+	rm -f *.o a.out driver proc_driver
 
 check-syntax:
 	gcc -Wall -o nul -S ${CHK_SOURCES}
